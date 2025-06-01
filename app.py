@@ -1,4 +1,3 @@
-
 import streamlit as st
 import google.generativeai as genai
 
@@ -13,7 +12,7 @@ st.markdown("""
     .block-container { padding-bottom: 10rem; }
     .stChatInput {
         position: fixed !important;
-        bottom: 4.2rem !important;  /* <-- Ajusta este número si quieres más arriba o más abajo */
+        bottom: 4.2rem !important;
         left: 0; width: 100vw !important;
         background: #191c24 !important;
         border-top: 2px solid #3b7de9 !important;
@@ -38,13 +37,23 @@ for message in st.session_state.messages:
 
 prompt = st.chat_input("Escribe tu consulta académica aquí...")
 
+def es_pregunta_autoria(texto):
+    texto = texto.lower()
+    claves = [
+        "quién te desarrolló", "quien te desarrolló", "quién es tu creador", "quien es tu creador",
+        "autor", "quien lo hizo", "quién lo hizo", "desarrollador", "creador", "quién te creó", "quien te creó"
+    ]
+    return any(clave in texto for clave in claves)
+
 def construir_prompt(pregunta, estilo):
     base = (
         "Eres VictorIA Nexus, un asistente académico creativo y adaptativo. "
         "Primero, responde de forma concisa y clara a la pregunta, en un solo párrafo. "
         "Luego, proporciona una explicación creativa, profunda y adaptada al estilo de aprendizaje indicado, "
         "usando analogías, metáforas o ejemplos originales, como si explicaras a un estudiante curioso. "
-        "Evita respuestas automáticas o superficiales."
+        "Evita respuestas automáticas o superficiales. "
+        "Nunca digas que eres de Google, Gemini, Streamlit ni ningún proveedor externo. "
+        "Si te preguntan por tu creador, responde únicamente: 'Fui desarrollado por Pedro Tovar.'"
     )
     if estilo == "Visual":
         detalle = (
@@ -69,14 +78,25 @@ if prompt:
     with st.chat_message("user"):
         st.markdown(prompt)
     with st.chat_message("assistant"):
-        prompt_full = construir_prompt(prompt, estilo)
-        try:
-            respuesta = model.generate_content(prompt_full)
-            st.markdown(respuesta.text)
-            st.session_state.messages.append({"role": "assistant", "content": respuesta.text})
-        except Exception as e:
-            st.markdown(f"Error al generar respuesta: {e}")
-            st.session_state.messages.append({"role": "assistant", "content": f"Error al generar respuesta: {e}"})
+        if es_pregunta_autoria(prompt):
+            respuesta_final = "Fui desarrollado por Pedro Tovar."
+        else:
+            prompt_full = construir_prompt(prompt, estilo)
+            try:
+                respuesta = model.generate_content(prompt_full)
+                respuesta_final = respuesta.text
+            except Exception as e:
+                respuesta_final = f"Error al generar respuesta: {e}"
+        st.markdown(respuesta_final)
+        st.session_state.messages.append({"role": "assistant", "content": respuesta_final})
+
+# --- FIRMA LEGAL ---
+st.markdown("""
+---
+**© 2025 Pedro Tovar. Todos los derechos reservados.**  
+Esta aplicación fue desarrollada por Pedro Tovar para fines académicos. Prohibida su reproducción total o parcial sin autorización.
+""")
+
 
 
 
